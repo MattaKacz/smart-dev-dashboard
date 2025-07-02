@@ -4,7 +4,7 @@ from app.main import app
 
 client = TestClient(app)
 
-@patch("app.services.gpt_service.analyze_logs")
+@patch("app.api.analyze.analyze_logs")
 def test_analyze_success(mock_analyze):
     mock_analyze.return_value = "TA database connection failure can occur due to various reasons. Here are some potential causes and solutions..."
 
