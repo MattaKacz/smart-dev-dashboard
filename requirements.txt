@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+openai
+langchain
+faiss-cpu
+python-dotenv
+pytest
+httpx
+loguru

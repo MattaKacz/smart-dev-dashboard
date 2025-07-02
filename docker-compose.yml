@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    ports:
+      - '8000:8000'
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+
+  tests:
+    build: .
+    command: ['pytest']
+    env_file:
+      - .env
+    volumes:
+      - .:/app
