@@ -2,7 +2,7 @@
 .env
 *.env
 
-# Python cache
+# Python cache and build artifacts
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -15,17 +15,35 @@ venv/
 ENV/
 env/
 
-# Tests
+# Test cache and coverage
 .pytest_cache/
 .coverage
 htmlcov/
 
-# Logs
+# Logs and database
 *.log
+logs/
+logs.db
 
-# Editors
+# User uploads
+uploads/
+
+# Vector database
+vector_db/
+
+# Editor and system files
 .vscode/
 .idea/
+.DS_Store
 
-# macOS
-.DS_Store 
+# Archives and binaries
+*.zip
+*.tar
+*.tar.gz
+
+# Helper and migration folders
+webapp_logs/
+
+# Temporary, test, and migration files
+new_test_format.log
+test_log.log 
