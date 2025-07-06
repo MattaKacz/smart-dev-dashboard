@@ -17,6 +17,10 @@ Smart Dev Dashboard is an internal tool for AI-powered log analysis, vector sear
 
 ## 🏁 Quick Start
 
+## 🐳 Deployment
+
+> **Note:** This project no longer includes an automated Azure deployment workflow. For deployment, use local, Docker, or other cloud/VPS solutions.
+
 ```bash
 # Install dependencies
 pip install -r requirements.txt

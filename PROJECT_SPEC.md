@@ -142,6 +142,8 @@ POST /analyze:
 
 ### Development
 
+> **Note:** This project no longer includes an automated Azure deployment workflow. For deployment, use local, Docker, or other cloud/VPS solutions.
+
 ```bash
 # Local development
 docker-compose up app
