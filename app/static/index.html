@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Dev Dashboard - AI Log Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tailwindcss/typography@0.5.10/dist/typography.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .loading {
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        /* Minimalne style markdown/prose dla modala */
+        #log-details-analysis h1 {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 1em 0 0.5em 0;
+        }
+
+        #log-details-analysis h2 {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin: 1em 0 0.5em 0;
+        }
+
+        #log-details-analysis h3 {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 1em 0 0.5em 0;
+        }
+
+        #log-details-analysis ul,
+        #log-details-analysis ol {
+            margin-left: 1.5em;
+            margin-bottom: 1em;
+        }
+
+        #log-details-analysis li {
+            margin-bottom: 0.3em;
+        }
+
+        #log-details-analysis p {
+            margin-bottom: 1em;
+        }
+
+        #log-details-analysis code {
+            background: #f3f3f3;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 0.95em;
+        }
+
+        #log-details-analysis pre {
+            background: #f3f3f3;
+            padding: 0.7em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        #log-details-analysis strong {
+            font-weight: bold;
+        }
+
+        /* Minimalistyczny styl dla markdown w modalu */
+        #log-details-analysis h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 1em 0 0.5em;
+        }
+
+        #log-details-analysis h2 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 1em 0 0.5em;
+        }
+
+        #log-details-analysis h3 {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin: 1em 0 0.5em;
+        }
+
+        #log-details-analysis ul,
+        #log-details-analysis ol {
+            margin: 1em 0 1em 2em;
+        }
+
+        #log-details-analysis li {
+            margin-bottom: 0.3em;
+        }
+
+        #log-details-analysis p {
+            margin: 0.5em 0;
+        }
+
+        #log-details-analysis code {
+            background: #f3f3f3;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        #log-details-analysis pre {
+            background: #f3f3f3;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        #log-details-analysis strong {
+            font-weight: bold;
+        }
+
+        #log-details-analysis em {
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-brain text-2xl"></i>
+                    <h1 class="text-2xl font-bold">Smart Dev Dashboard</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm opacity-90">AI-Powered Log Analysis</span>
+                    <div id="status-indicator" class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+
+                    <!-- Control buttons -->
+                    <div class="flex items-center space-x-2">
+                        <button id="auto-refresh-toggle" onclick="toggleAutoRefresh()"
+                            class="bg-yellow-600 text-white px-3 py-1 rounded text-sm hover:bg-yellow-700 transition-colors">
+                            <i class="fas fa-pause mr-1"></i>Pause Auto-refresh
+                        </button>
+                        <button onclick="refreshAllData()"
+                            class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-sync-alt mr-1"></i>Refresh
+                        </button>
+                    </div>
+
+                    <!-- Last refresh time -->
+                    <span id="last-refresh-time" class="text-xs opacity-75">Last updated: -</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                        <i class="fas fa-file-alt text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Logs</p>
+                        <p id="total-logs" class="text-2xl font-bold text-gray-900">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600">
+                        <i class="fas fa-database text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Incidents</p>
+                        <p id="total-incidents" class="text-2xl font-bold text-gray-900">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                        <i class="fas fa-exclamation-triangle text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Critical</p>
+                        <p id="critical-incidents" class="text-2xl font-bold text-gray-900">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                        <i class="fas fa-search text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Categories</p>
+                        <p id="total-categories" class="text-2xl font-bold text-gray-900">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Actions -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Upload Section -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-upload text-blue-600 mr-2"></i>
+                    Upload Log File
+                </h2>
+
+                <div class="space-y-4">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600 mb-2">Drag and drop your log file here</p>
+                        <p class="text-sm text-gray-500">or</p>
+                        <input type="file" id="log-file" accept=".log,.txt" class="hidden">
+                        <button onclick="document.getElementById('log-file').click()"
+                            class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            Choose File
+                        </button>
+                    </div>
+
+                    <div id="upload-status" class="hidden">
+                        <div class="flex items-center space-x-2">
+                            <div
+                                class="loading w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin">
+                            </div>
+                            <span id="upload-message">Uploading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Section -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-search text-green-600 mr-2"></i>
+                    Search Similar Incidents
+                </h2>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Search Query</label>
+                        <input type="text" id="search-query"
+                            placeholder="e.g., Database connection error, OutOfMemoryError..."
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Results Limit</label>
+                            <select id="top-k"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="3">3 results</option>
+                                <option value="5" selected>5 results</option>
+                                <option value="10">10 results</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Similarity Threshold</label>
+                            <select id="similarity-threshold"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="0.3">30%</option>
+                                <option value="0.5" selected>50%</option>
+                                <option value="0.7">70%</option>
+                                <option value="0.9">90%</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button image.png="searchIncidents()"
+                        class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i>
+                        Search Incidents
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results-section" class="mt-8 hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-list text-purple-600 mr-2"></i>
+                    Search Results
+                </h2>
+
+                <div id="results-container" class="space-y-4">
+                    <!-- Results will be inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Uploaded Files Section -->
+        <div id="files-section" class="mt-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-folder text-orange-600 mr-2"></i>
+                    Uploaded Log Files
+                </h2>
+
+                <div id="files-container" class="space-y-4">
+                    <!-- Files will be inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Log Entries Section -->
+        <div id="log-entries-section" class="mt-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-900">
+                        <i class="fas fa-list-alt text-indigo-600 mr-2"></i>
+                        Log Entries
+                    </h2>
+                    <div class="flex items-center space-x-4">
+                        <!-- Export buttons -->
+                        <div class="flex items-center space-x-2">
+                            <button onclick="exportToCSV()"
+                                class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors">
+                                <i class="fas fa-download mr-1"></i>Export CSV
+                            </button>
+                            <button onclick="exportToJSON()"
+                                class="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 transition-colors">
+                                <i class="fas fa-code mr-1"></i>Export JSON
+                            </button>
+                        </div>
+
+                        <!-- Enhanced filters -->
+                        <div class="flex items-center space-x-2">
+                            <!-- Date range filter -->
+                            <input type="date" id="date-from" class="px-2 py-1 border border-gray-300 rounded text-sm">
+                            <span class="text-gray-500">to</span>
+                            <input type="date" id="date-to" class="px-2 py-1 border border-gray-300 rounded text-sm">
+
+                            <!-- Filter by Level -->
+                            <select id="level-filter" class="px-3 py-1 border border-gray-300 rounded text-sm">
+                                <option value="">All Levels</option>
+                                <option value="CRITICAL">Critical</option>
+                                <option value="ERROR">Error</option>
+                                <option value="WARN">Warning</option>
+                                <option value="INFO">Info</option>
+                                <option value="DEBUG">Debug</option>
+                            </select>
+
+                            <!-- Search in messages -->
+                            <input type="text" id="message-search" placeholder="Search in messages..."
+                                class="px-3 py-1 border border-gray-300 rounded text-sm w-48">
+
+                            <!-- Source filter -->
+                            <select id="source-filter" class="px-3 py-1 border border-gray-300 rounded text-sm">
+                                <option value="">All Sources</option>
+                                <!-- Will be populated dynamically -->
+                            </select>
+
+                            <!-- Clear filters -->
+                            <button onclick="clearFilters()"
+                                class="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 transition-colors">
+                                <i class="fas fa-times mr-1"></i>Clear
+                            </button>
+                        </div>
+
+                        <!-- Refresh button -->
+                        <button onclick="loadLogEntries()"
+                            class="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700">
+                            <i class="fas fa-sync-alt mr-1"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter summary -->
+                <div id="filter-summary" class="mb-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-600 hidden">
+                    <span id="filter-text">No filters applied</span>
+                    <span id="filter-count" class="ml-2 font-medium"></span>
+                </div>
+
+                <!-- Log Entries Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <input type="checkbox" id="select-all" class="rounded border-gray-300">
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                    onclick="sortTable('timestamp')">
+                                    Timestamp <i class="fas fa-sort ml-1"></i>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                    onclick="sortTable('level')">
+                                    Level <i class="fas fa-sort ml-1"></i>
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Message
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                    onclick="sortTable('source')">
+                                    Source <i class="fas fa-sort ml-1"></i>
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    File
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Line
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="log-entries-table" class="bg-white divide-y divide-gray-200">
+                            <!-- Log entries will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Bulk actions -->
+                <div id="bulk-actions" class="mt-4 p-3 bg-blue-50 rounded-lg hidden">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-blue-700">
+                            <span id="selected-count">0</span> entries selected
+                        </span>
+                        <div class="flex space-x-2">
+                            <button onclick="deleteSelected()"
+                                class="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700">
+                                <i class="fas fa-trash mr-1"></i>Delete Selected
+                            </button>
+                            <button onclick="exportSelected()"
+                                class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                                <i class="fas fa-download mr-1"></i>Export Selected
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div class="mt-4 flex items-center justify-between">
+                    <div class="text-sm text-gray-700">
+                        Showing <span id="entries-start">0</span> to <span id="entries-end">0</span> of <span
+                            id="entries-total">0</span> entries
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="prev-page" onclick="changePage(-1)"
+                            class="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50">
+                            Previous
+                        </button>
+                        <span id="current-page" class="px-3 py-1 text-sm">Page 1</span>
+                        <button id="next-page" onclick="changePage(1)"
+                            class="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50">
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-4">
+            <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-lg font-medium">Processing...</span>
+        </div>
+    </div>
+
+    <!-- Log File Details Modal -->
+    <div id="log-details-modal-overlay"
+        class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden overflow-y-auto"
+        style="padding: 2rem;">
+        <div id="log-details-modal" class="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl relative"
+            style="max-height: 85vh; overflow-y: auto; min-width: 600px;">
+            <button onclick="closeLogFileDetails()" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2 class="text-xl font-bold mb-2">Log File Details</h2>
+            <div class="mb-2"><b>Name:</b> <span id="log-details-filename"></span></div>
+            <div class="mb-2"><b>Upload date:</b> <span id="log-details-upload-time"></span></div>
+            <div class="mb-2"><b>Entry count:</b> <span id="log-details-count"></span></div>
+            <div class="mb-2"><b>Analysis status:</b> <span id="log-details-status"></span></div>
+            <div class="mb-2"><b>AI Analysis Result:</b></div>
+            <div id="log-details-analysis" class="prose prose-sm max-w-none"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/static/script.js"></script>
+    <script>
+        container.querySelectorAll('.details-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                showLogFileDetails(this.getAttribute('data-log-id'));
+            });
+        });
+
+        function setupModalCloseEvents() {
+            const overlay = document.getElementById('log-details-modal-overlay');
+            const modal = document.getElementById('log-details-modal');
+            if (!overlay || !modal) return;
+
+            overlay.addEventListener('click', function (e) {
+                if (e.target === overlay) {
+                    closeLogFileDetails();
+                }
+            });
+            document.addEventListener('keydown', function (e) {
+                if (!overlay.classList.contains('hidden') && e.key === 'Escape') {
+                    closeLogFileDetails();
+                }
+            });
+        }
+
+        function closeLogFileDetails() {
+            console.log('Modal closed');
+            document.getElementById('log-details-modal-overlay').classList.add('hidden');
+        }
+
+        async function showLogFileDetails(logId) {
+            try {
+                const response = await fetch(`${API_BASE}/logs_sql/${logId}`);
+                if (!response.ok) {
+                    showNotification('Failed to fetch log file details', 'error');
+                    return;
+                }
+                const log = await response.json();
+                document.getElementById('log-details-filename').textContent = log.filename;
+                document.getElementById('log-details-upload-time').textContent = new Date(
+                    log.upload_time
+                ).toLocaleString();
+                document.getElementById('log-details-count').textContent = log.log_count;
+                document.getElementById('log-details-status').textContent =
+                    log.log_analysis_status;
+                const analysisContainer = document.getElementById('log-details-analysis');
+                const markdown = (log.analysis_result || '').trim();
+                if (window.marked) {
+                    try {
+                        analysisContainer.innerHTML = window.marked.parse(markdown);
+                    } catch (e) {
+                        analysisContainer.innerText = markdown;
+                    }
+                } else {
+                    analysisContainer.innerText = markdown;
+                }
+                document
+                    .getElementById('log-details-modal-overlay')
+                    .classList.remove('hidden');
+            } catch (err) {
+                console.error('Error in showLogFileDetails:', err);
+                showNotification('JS error: ' + err.message, 'error');
+            }
+        }
+    </script>
+</body>
+
+</html>

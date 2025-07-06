@@ -39,8 +39,11 @@
 - ✅ OpenAI integration
 - ✅ Docker setup
 - ✅ CI/CD pipeline
-- 🔄 Vector search implementation (planned)
-- 📋 Dashboard UI (future)
+- ✅ Vector search implementation
+- ✅ Web dashboard UI
+- ✅ Full CRUD for logs and log entries (SQLModel + SQLite)
+- ✅ Robust, safe logging (loguru, no KeyError)
+- Log parser supports both classic (YYYY-MM-DD HH:MM:SS [LEVEL] source:function:line - message) and ISO (YYYY-MM-DDTHH:MM:SS.sssZ [LEVEL] message with stack trace) formats. Stack traces are attached to the previous log entry.
 
 ### Key Constraints
 
@@ -67,11 +70,23 @@
 
 ### Next Steps (MVP)
 
-1. Implement FAISS vector search service
-2. Add log file upload functionality
-3. Enhance error handling and validation
-4. Improve test coverage
-5. Add structured logging
+1. Enhance error handling and validation
+2. Improve test coverage
+3. Add structured logging
+
+### Example supported log lines:
+
+- Classic: 2024-07-05 16:12:34 [ERROR] database:connect_db:42 - Database connection failed: timeout after 30s
+- ISO: 2025-07-05T12:01:32.751Z [ERROR] Send email error: ... (with stack trace indented)
+
+### Log parsing flow:
+
+```mermaid
+graph TD
+    A[Log file line] --> B{Matches main pattern?}
+    B -- Yes --> C[New LogEntry]
+    B -- No --> D[Append to previous LogEntry]
+```
 
 ---
 

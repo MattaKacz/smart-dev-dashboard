@@ -1,0 +1,17 @@
+{
+	"dashboard": {
+		"title": "Smart Dev Dashboard",
+		"panels": [
+			{
+				"id": 1,
+				"title": "Request Rate",
+				"type": "timeseries",
+				"targets": [
+					{
+						"expr": "rate(smart_dashboard_requests_total[5m])"
+					}
+				]
+			}
+		]
+	}
+}

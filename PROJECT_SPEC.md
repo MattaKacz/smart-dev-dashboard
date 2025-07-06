@@ -21,6 +21,8 @@
 - **RESTful API**: Clean, modular FastAPI-based architecture
 - **Docker Support**: Containerized deployment with Docker and Docker Compose
 - **CI/CD Pipeline**: Automated testing and deployment via GitHub Actions
+- **Full CRUD for logs and log entries via SQLModel and SQLite**
+- **Robust logging with loguru (no KeyError on dynamic fields)**
 
 ### Future Features (Post-MVP)
 
@@ -69,6 +71,16 @@ smart_dev_dashboard/
 - `GET /health` - Health check endpoint
 - `GET /logs` - Logs management (placeholder)
 - `POST /analyze` - AI-powered log analysis
+- `POST /logs_sql` - Create log file (SQLModel)
+- `GET /logs_sql` - List log files
+- `GET /logs_sql/{id}` - Get log file by ID
+- `PUT /logs_sql/{id}` - Update log file
+- `DELETE /logs_sql/{id}` - Delete log file
+- `POST /log_entries_sql` - Create log entry
+- `GET /log_entries_sql` - List log entries
+- `GET /log_entries_sql/{id}` - Get log entry by ID
+- `PUT /log_entries_sql/{id}` - Update log entry
+- `DELETE /log_entries_sql/{id}` - Delete log entry
 
 ### API Specifications
 
@@ -272,6 +284,45 @@ docker-compose run --rm tests
 - **Internal Tool**: Supporting dev/infra teams (e.g., RM CyberShield)
 - **Quick Feedback**: Fast AI-powered debugging assistance for developers
 - **Incident Analysis**: Rapid identification of similar past incidents using vector search
+
+### Data Storage
+
+- All logs and log entries are stored in SQLite using SQLModel.
+- No file-based metadata is used; all metadata is in the database.
+
+### Log Parsing
+
+- The backend log parser supports both classic log format (`YYYY-MM-DD HH:MM:SS [LEVEL] source:function:line - message`) and ISO format (`YYYY-MM-DDTHH:MM:SS.sssZ [LEVEL] message` with stack trace lines).
+- Stack traces and indented lines are automatically attached to the previous log entry, so multi-line errors are stored as a single entry.
+
+#### Example Supported Log Lines
+
+Classic format:
+
+```
+2024-07-05 16:12:34 [ERROR] database:connect_db:42 - Database connection failed: timeout after 30s
+2024-07-05 16:12:35 [WARN] database:connect_db:42 - Retrying connection...
+```
+
+ISO format with stack trace:
+
+```
+2025-07-05T12:01:32.751Z [ERROR] Send email error: Error: Testowy błąd loggera!
+    at POST (webpack-internal:///(rsc)/./src/app/api/send/route.js:45:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    ...
+```
+
+#### Log Parsing Flow
+
+```mermaid
+graph TD
+    A[Log file content] --> B{Line matches main pattern?}
+    B -- Yes: classic/ISO --> C[Start new LogEntry]
+    B -- No: indented/trace --> D[Append to previous LogEntry message]
+    C --> E[Store LogEntry]
+    D --> E
+```
 
 ---
 
