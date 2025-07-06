@@ -5,5 +5,7 @@ client = TestClient(app)
 
 def test_get_logs():
     response = client.get("/logs")
-    assert response.status_code == 200
-    assert "message" in response.json()
+    data = response.json()
+    assert "files" in data
+    assert "total_count" in data
+    assert "total_size" in data

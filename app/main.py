@@ -21,16 +21,25 @@ from app.core.middleware import LoggingMiddleware
 import os
 from fastapi.middleware.cors import CORSMiddleware
 from app.db import create_db_and_tables
+from contextlib import asynccontextmanager
 
 
 
 
 load_dotenv()
 
+@asynccontextmanager
+def lifespan(app: FastAPI):
+    logger.info("Smart Dev Dashboard starting up...")
+    create_db_and_tables()
+    yield
+    logger.info("Smart Dev Dashboard shutting down...")
+
 app = FastAPI(
     title="Smart Dev Dashboard",
     description="AI-powered development dashboard for intelligent log analysis and debugging assistance",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Add logging middleware
@@ -66,12 +75,3 @@ async def read_root():
 def health_check():
     logger.info("Health check requested")
     return {"status": "ok", "timestamp": "2024-12-19T10:00:00Z"}
-
-@app.on_event("startup")
-async def startup_event():
-    logger.info("Smart Dev Dashboard starting up...")
-    create_db_and_tables()
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("Smart Dev Dashboard shutting down...")
